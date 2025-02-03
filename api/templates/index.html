@@ -16,26 +16,29 @@
                     let tableBody = document.getElementById("playersTable");
                     tableBody.innerHTML = "";
                     data.forEach(player => {
+                        function formatValue(value) {
+                            return value !== undefined ? value : "-";
+                        }
                         let row = `<tr>
-                            <td>${player.Name}</td>
-                            <td>${player.Team}</td>
-                            <td>${player.Position}</td>
-                            <td>${player.OPP}</td>
-                            <td>${player.Date}</td>
-                            <td>${player.PC}</td>
-                            <td>${player.PAtt}</td>
-                            <td>${player.PaY}</td>
-                            <td>${player.PaTD}</td>
-                            <td>${player.I}</td>
-                            <td>${player.RA}</td>
-                            <td>${player.RuY}</td>
-                            <td>${player.RuTD}</td>
-                            <td>${player.F}</td>
-                            <td>${player.Tar}</td>
-                            <td>${player.Re}</td>
-                            <td>${player.ReY}</td>
-                            <td>${player.ReTD}</td>
-                            <td>${player.FP}</td>
+                            <td>${formatValue(player.Name)}</td>
+                            <td>${formatValue(player.Team)}</td>
+                            <td>${formatValue(player.Position)}</td>
+                            <td>${formatValue(player.OPP)}</td>
+                            <td>${formatValue(player.Date)}</td>
+                            <td>${formatValue(player.PC)}</td>
+                            <td>${formatValue(player.PAtt)}</td>
+                            <td>${formatValue(player.PaY)}</td>
+                            <td>${formatValue(player.PaTD)}</td>
+                            <td>${formatValue(player.I)}</td>
+                            <td>${formatValue(player.RA)}</td>
+                            <td>${formatValue(player.RuY)}</td>
+                            <td>${formatValue(player.RuTD)}</td>
+                            <td>${formatValue(player.F)}</td>
+                            <td>${formatValue(player.Tar)}</td>
+                            <td>${formatValue(player.Re)}</td>
+                            <td>${formatValue(player.ReY)}</td>
+                            <td>${formatValue(player.ReTD)}</td>
+                            <td>${formatValue(player.FP)}</td>
                             <td><button onclick="deletePlayer('${player._id}')">Delete</button></td>
                         </tr>`;
                         tableBody.innerHTML += row;

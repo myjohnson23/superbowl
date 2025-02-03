@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from collections import defaultdict
 
 app = Flask(__name__)
 CORS(app)
@@ -39,6 +40,48 @@ def delete_player(player_id):
     if result.deleted_count == 0:
         return jsonify({"error": "Player not found"}), 404
     return jsonify({"message": "Player deleted successfully"})
+
+@app.route("/players/summary", methods=["GET"])
+def get_players_summary():
+    players = list(collection.find())
+
+    # Dictionary to store accumulated stats
+    player_stats = defaultdict(lambda: {
+        "Games Played": 0,
+        "Pass Comp": 0, "Pass Att": 0, "Pass Yds": 0, "Pass TDs": 0, "Int": 0,
+        "Rush Att": 0, "Rush Yds": 0, "Rush TDs": 0, "Fum": 0,
+        "Target": 0, "Rec": 0, "Rec Yds": 0, "Rec TDs": 0,
+        "Fantasy Points": 0
+    })
+
+    # Sum up stats for each player
+    for player in players:
+        key = (player["Name"], player["Team"], player["Position"])
+        player_stats[key]["Games Played"] += 1
+
+        for stat in ["Pass Comp", "Pass Att", "Pass Yds", "Pass TDs", "Int",
+                     "Rush Att", "Rush Yds", "Rush TDs", "Fum",
+                     "Target", "Rec", "Rec Yds", "Rec TDs",
+                     "Fantasy Points"]:
+            if stat in player and isinstance(player[stat], (int, float)):
+                player_stats[key][stat] += player[stat]
+
+    # Compute averages
+    summary = []
+    for (name, team, position), stats in player_stats.items():
+        games_played = stats["Games Played"]
+        avg_stats = {stat: round(stats[stat] / games_played, 2) if games_played > 0 else 0
+                     for stat in stats if stat != "Games Played"}
+        
+        summary.append({
+            "Name": name,
+            "Team": team,
+            "Position": position,
+            "Games Played": games_played,
+            **avg_stats
+        })
+
+    return jsonify(summary)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
