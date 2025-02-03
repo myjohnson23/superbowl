@@ -4,88 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fantasy Football Players</title>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            fetchPlayers();
-        });
-
-        function fetchPlayers() {
-            fetch("/players")
-                .then(response => response.json())
-                .then(data => {
-                    let tableBody = document.getElementById("playersTable");
-                    tableBody.innerHTML = "";
-                    data.forEach(player => {
-                        function formatValue(value) {
-                            return value !== undefined ? value : "-";
-                        }
-                        let row = `<tr>
-                            <td>${formatValue(player.Name)}</td>
-                            <td>${formatValue(player.Team)}</td>
-                            <td>${formatValue(player.Position)}</td>
-                            <td>${formatValue(player.OPP)}</td>
-                            <td>${formatValue(player.Date)}</td>
-                            <td>${formatValue(player.PC)}</td>
-                            <td>${formatValue(player.PAtt)}</td>
-                            <td>${formatValue(player.PaY)}</td>
-                            <td>${formatValue(player.PaTD)}</td>
-                            <td>${formatValue(player.I)}</td>
-                            <td>${formatValue(player.RA)}</td>
-                            <td>${formatValue(player.RuY)}</td>
-                            <td>${formatValue(player.RuTD)}</td>
-                            <td>${formatValue(player.F)}</td>
-                            <td>${formatValue(player.Tar)}</td>
-                            <td>${formatValue(player.Re)}</td>
-                            <td>${formatValue(player.ReY)}</td>
-                            <td>${formatValue(player.ReTD)}</td>
-                            <td>${formatValue(player.FP)}</td>
-                            <td><button onclick="deletePlayer('${player._id}')">Delete</button></td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
-                    });
-                });
-        }
-
-        function addPlayer() {
-            let name = document.getElementById("name").value;
-            let team = document.getElementById("team").value;
-            let position = document.getElementById("position").value;
-            let opp = document.getElementById("opp").value;
-            let date = document.getElementById("date").value;
-            let fp = document.getElementById("fp").value;
-
-            let playerData = {
-                "Name": name,
-                "Team": team,
-                "Position": position,
-                "OPP": opp,
-                "Date": date,
-                "FP": parseFloat(fp)
-            };
-
-            fetch("/players", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(playerData)
-            }).then(response => response.json())
-              .then(data => {
-                  alert(data.message);
-                  fetchPlayers();
-              });
-        }
-
-        function deletePlayer(playerId) {
-            fetch(`/players/${playerId}`, {
-                method: "DELETE"
-            }).then(response => response.json())
-              .then(data => {
-                  alert(data.message);
-                  fetchPlayers();
-              });
-        }
-    </script>
+   
 </head>
 <body>
     <h1>Fantasy Football Players</h1>
@@ -112,33 +31,99 @@
     <input type="number" id="fp" placeholder="Fantasy Points">
     <button onclick="addPlayer()">Add Player</button>
 
-    <h2>Player List</h2>
+       <h1>Fantasy Football Player Summary</h1>
+
     <table border="1">
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Team</th>
                 <th>Position</th>
-                <th>Opponent</th>
-                <th>Date</th>
-                <th>Pass Comp</th>
+                <th>Games Played</th>
                 <th>Pass Att</th>
+                <th>Pass Comp</th>
                 <th>Pass Yds</th>
                 <th>Pass TDs</th>
-                <th>Int</th>
+                <th>INT</th>
                 <th>Rush Att</th>
                 <th>Rush Yds</th>
                 <th>Rush TDs</th>
-                <th>Fum</th>
-                <th>Target</th>
-                <th>Rec</th>
+                <th>Fumbles</th>
+                <th>Targets</th>
+                <th>Receptions</th>
                 <th>Rec Yds</th>
                 <th>Rec TDs</th>
                 <th>Fantasy Points</th>
-                <th>Action</th>
             </tr>
         </thead>
-        <tbody id="playersTable"></tbody>
+        <tbody id="summaryTableBody">
+            <!-- Player data will be dynamically inserted here -->
+        </tbody>
     </table>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("DOM fully loaded");
+    
+            let tableBody = document.getElementById("summaryTableBody");
+            
+            // Check if the element exists
+            if (!tableBody) {
+                console.error("ERROR: Element with id 'summaryTableBody' not found!");
+                return;
+            } else {
+                console.log("Table body found: Ready to insert data.");
+            }
+    
+            fetchPlayerSummary();
+        });
+    
+        function fetchPlayerSummary() {
+            fetch("/players/summary")
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Fetched data:", data);  // Debugging output
+                    
+                    let tableBody = document.getElementById("summaryTableBody");
+                    
+                    if (!tableBody) {
+                        console.error("ERROR: 'summaryTableBody' not found in fetchPlayerSummary!");
+                        return;
+                    }
+    
+                    tableBody.innerHTML = ""; // Clear table before updating
+                    
+                    if (!data.length) {
+                        tableBody.innerHTML = "<tr><td colspan='18'>No player data found.</td></tr>";
+                        return;
+                    }
+    
+                    data.forEach(player => {
+                        let row = `<tr>
+                            <td>${player.Name || "-"}</td>
+                            <td>${player.Team || "-"}</td>
+                            <td>${player.Position || "-"}</td>
+                            <td>${player["Games Played"] || "-"}</td>
+                            <td>${player.PAtt || "-"}</td>
+                            <td>${player.PC || "-"}</td>
+                            <td>${player.PaY || "-"}</td>
+                            <td>${player.PaTD || "-"}</td>
+                            <td>${player.I || "-"}</td>
+                            <td>${player.RA || "-"}</td>
+                            <td>${player.RuY || "-"}</td>
+                            <td>${player.RuTD || "-"}</td>
+                            <td>${player.F || "-"}</td>
+                            <td>${player.Tar || "-"}</td>
+                            <td>${player.Re || "-"}</td>
+                            <td>${player.ReY || "-"}</td>
+                            <td>${player.ReTD || "-"}</td>
+                            <td>${player.FP || "-"}</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error("Error fetching summary data:", error));
+        }
+    </script>
 </body>
 </html>
+    

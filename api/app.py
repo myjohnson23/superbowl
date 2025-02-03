@@ -36,21 +36,37 @@ def get_players_summary():
     # Dictionary to store accumulated stats
     player_stats = defaultdict(lambda: {
         "Games Played": 0,
-        "Pass Comp": 0, "Pass Att": 0, "Pass Yds": 0, "Pass TDs": 0, "Int": 0,
-        "Rush Att": 0, "Rush Yds": 0, "Rush TDs": 0, "Fum": 0,
-        "Target": 0, "Rec": 0, "Rec Yds": 0, "Rec TDs": 0,
-        "Fantasy Points": 0
+        "PAtt": 0,  # Pass Attempts
+        "PC": 0,    # Pass Completions
+        "PaY": 0,   # Passing Yards
+        "PaTD": 0,  # Passing TDs
+        "I": 0,     # Interceptions
+        "RA": 0,    # Rush Attempts
+        "RuY": 0,   # Rushing Yards
+        "RuTD": 0,  # Rushing TDs
+        "F": 0,     # Fumbles
+        "Tar": 0,   # Targets
+        "Re": 0,    # Receptions
+        "ReY": 0,   # Receiving Yards
+        "ReTD": 0,  # Receiving TDs
+        "FP": 0     # Fantasy Points
     })
 
     # Sum up stats for each player
     for player in players:
-        key = (player["Name"], player["Team"], player["Position"])
+        name = player.get("Name", "Unknown")
+        team = player.get("Team", "Unknown")
+        position = player.get("Position", "Unknown")
+        key = (name, team, position)
+
         player_stats[key]["Games Played"] += 1
 
-        for stat in ["Pass Comp", "Pass Att", "Pass Yds", "Pass TDs", "Int",
-                     "Rush Att", "Rush Yds", "Rush TDs", "Fum",
-                     "Target", "Rec", "Rec Yds", "Rec TDs",
-                     "Fantasy Points"]:
+        # Correct field names for MongoDB data
+        stat_fields = ["PAtt", "PC", "PaY", "PaTD", "I",
+                       "RA", "RuY", "RuTD", "F", 
+                       "Tar", "Re", "ReY", "ReTD", "FP"]
+
+        for stat in stat_fields:
             if stat in player and isinstance(player[stat], (int, float)):
                 player_stats[key][stat] += player[stat]
 
@@ -60,7 +76,7 @@ def get_players_summary():
         games_played = stats["Games Played"]
         avg_stats = {stat: round(stats[stat] / games_played, 2) if games_played > 0 else 0
                      for stat in stats if stat != "Games Played"}
-        
+
         summary.append({
             "Name": name,
             "Team": team,
@@ -70,6 +86,7 @@ def get_players_summary():
         })
 
     return jsonify(summary)
+
 
 # Add a new player
 @app.route("/players", methods=["POST"])
