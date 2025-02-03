@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Football Players</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchPlayers();
+        });
+
+        function fetchPlayers() {
+            fetch("/players")
+                .then(response => response.json())
+                .then(data => {
+                    let tableBody = document.getElementById("playersTable");
+                    tableBody.innerHTML = "";
+                    data.forEach(player => {
+                        let row = `<tr>
+                            <td>${player.Name}</td>
+                            <td>${player.Team}</td>
+                            <td>${player.Position}</td>
+                            <td>${player.OPP}</td>
+                            <td>${player.Date}</td>
+                            <td>${player.PC}</td>
+                            <td>${player.PAtt}</td>
+                            <td>${player.PaY}</td>
+                            <td>${player.PaTD}</td>
+                            <td>${player.I}</td>
+                            <td>${player.RA}</td>
+                            <td>${player.RuY}</td>
+                            <td>${player.RuTD}</td>
+                            <td>${player.F}</td>
+                            <td>${player.Tar}</td>
+                            <td>${player.Re}</td>
+                            <td>${player.ReY}</td>
+                            <td>${player.ReTD}</td>
+                            <td>${player.FP}</td>
+                            <td><button onclick="deletePlayer('${player._id}')">Delete</button></td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                });
+        }
+
+        function addPlayer() {
+            let name = document.getElementById("name").value;
+            let team = document.getElementById("team").value;
+            let position = document.getElementById("position").value;
+            let opp = document.getElementById("opp").value;
+            let date = document.getElementById("date").value;
+            let fp = document.getElementById("fp").value;
+
+            let playerData = {
+                "Name": name,
+                "Team": team,
+                "Position": position,
+                "OPP": opp,
+                "Date": date,
+                "FP": parseFloat(fp)
+            };
+
+            fetch("/players", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(playerData)
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  fetchPlayers();
+              });
+        }
+
+        function deletePlayer(playerId) {
+            fetch(`/players/${playerId}`, {
+                method: "DELETE"
+            }).then(response => response.json())
+              .then(data => {
+                  alert(data.message);
+                  fetchPlayers();
+              });
+        }
+    </script>
+</head>
+<body>
+    <h1>Fantasy Football Players</h1>
+
+    <h2>Add New Player</h2>
+    <input type="text" id="name" placeholder="Name">
+    <input type="text" id="team" placeholder="Team">
+    <input type="text" id="position" placeholder="Position">
+    <input type="text" id="opp" placeholder="Opponent">
+    <input type="text" id="date" placeholder="Date">
+    <input type="text" id="PC" placeholder="Pass Comp">
+    <input type="text" id="PAtt" placeholder="Pass Att">
+    <input type="text" id="PaY" placeholder="Pass Yds">
+    <input type="text" id="PaTD" placeholder="Pass TDs">
+    <input type="text" id="I" placeholder="Int">
+    <input type="text" id="RA" placeholder="Rush Att">    
+    <input type="text" id="RuY" placeholder="Rush Yds">
+    <input type="text" id="RuTD" placeholder="Rush TDs">
+    <input type="text" id="F" placeholder="Fum">
+    <input type="text" id="Tar" placeholder="Target">
+    <input type="text" id="Re" placeholder="Rec">
+    <input type="text" id="ReY" placeholder="Rec Yds">
+    <input type="text" id="ReTD" placeholder="Rec TDs">
+    <input type="number" id="fp" placeholder="Fantasy Points">
+    <button onclick="addPlayer()">Add Player</button>
+
+    <h2>Player List</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Team</th>
+                <th>Position</th>
+                <th>Opponent</th>
+                <th>Date</th>
+                <th>Pass Comp</th>
+                <th>Pass Att</th>
+                <th>Pass Yds</th>
+                <th>Pass TDs</th>
+                <th>Int</th>
+                <th>Rush Att</th>
+                <th>Rush Yds</th>
+                <th>Rush TDs</th>
+                <th>Fum</th>
+                <th>Target</th>
+                <th>Rec</th>
+                <th>Rec Yds</th>
+                <th>Rec TDs</th>
+                <th>Fantasy Points</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="playersTable"></tbody>
+    </table>
+</body>
+</html>
