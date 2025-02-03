@@ -22,25 +22,13 @@ def format_document(doc):
 def index():
     return render_template("index.html")
 
-# API Endpoints
+# Fetch all players
 @app.route("/players", methods=["GET"])
 def get_players():
     players = list(collection.find())
     return jsonify([format_document(player) for player in players])
 
-@app.route("/players", methods=["POST"])
-def add_player():
-    data = request.json
-    result = collection.insert_one(data)
-    return jsonify({"message": "Player added", "id": str(result.inserted_id)}), 201
-
-@app.route("/players/<string:player_id>", methods=["DELETE"])
-def delete_player(player_id):
-    result = collection.delete_one({"_id": ObjectId(player_id)})
-    if result.deleted_count == 0:
-        return jsonify({"error": "Player not found"}), 404
-    return jsonify({"message": "Player deleted successfully"})
-
+# Fetch a summarized view of all players with averages
 @app.route("/players/summary", methods=["GET"])
 def get_players_summary():
     players = list(collection.find())
@@ -83,5 +71,22 @@ def get_players_summary():
 
     return jsonify(summary)
 
+# Add a new player
+@app.route("/players", methods=["POST"])
+def add_player():
+    data = request.json
+    result = collection.insert_one(data)
+    return jsonify({"message": "Player added", "id": str(result.inserted_id)}), 201
+
+# Delete a player by ID
+@app.route("/players/<string:player_id>", methods=["DELETE"])
+def delete_player(player_id):
+    result = collection.delete_one({"_id": ObjectId(player_id)})
+    
+    if result.deleted_count == 0:
+        return jsonify({"error": "Player not found"}), 404
+    return jsonify({"message": "Player deleted successfully"})
+
+# Run Flask on all network interfaces
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
