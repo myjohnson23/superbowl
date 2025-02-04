@@ -4,68 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fantasy Football Player Summary</title>
-    
+
     <!-- Bootstrap for styling -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 
     <script>
-    let sortDirection = {}; // Track sorting order per column
+        let sortDirection = {}; // Track sorting order per column
+        let lastSortedColumn = null; // Track last sorted column
 
-document.addEventListener("DOMContentLoaded", function() {
-    fetchPlayerSummary();
-});
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchPlayerSummary();
+        });
 
-function fetchPlayerSummary() {
-    let tableBody = document.getElementById("summaryTableBody");
-    tableBody.innerHTML = ""; // ✅ Clear table before updating
-
-    // Reset sorting direction when refreshing
-    sortDirection = {};  
-
-    fetch("/players/summary")
-        .then(response => response.json())
-        .then(data => {
-            console.log("Fetched data:", data);
+        function fetchPlayerSummary() {
+            let tableBody = document.getElementById("summaryTableBody");
             
-            if (!data.length) {
-                tableBody.innerHTML = "<tr><td colspan='18' class='text-center'>No player data found.</td></tr>";
-                return;
-            }
+            // ✅ Clear the table before fetching new data (fix duplicates)
+            tableBody.innerHTML = ""; 
+            sortDirection = {}; // Reset sorting
+            lastSortedColumn = null;
 
-            let teams = new Set();
-            let positions = new Set();
+            fetch("/players/summary")
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Fetched data:", data);
 
-            data.forEach(player => {
-                teams.add(player.Team);
-                positions.add(player.Position);
+                    if (!data.length) {
+                        tableBody.innerHTML = "<tr><td colspan='18' class='text-center'>No player data found.</td></tr>";
+                        return;
+                    }
 
-                let row = `<tr>
-                    <td>${player.Name || "-"}</td>
-                    <td>${player.Team || "-"}</td>
-                    <td>${player.Position || "-"}</td>
-                    <td>${player["Games Played"] || "-"}</td>
-                    <td>${player.PAtt || "-"}</td>
-                    <td>${player.PC || "-"}</td>
-                    <td>${player.PaY || "-"}</td>
-                    <td>${player.PaTD || "-"}</td>
-                    <td>${player.I || "-"}</td>
-                    <td>${player.RA || "-"}</td>
-                    <td>${player.RuY || "-"}</td>
-                    <td>${player.RuTD || "-"}</td>
-                    <td>${player.F || "-"}</td>
-                    <td>${player.Tar || "-"}</td>
-                    <td>${player.Re || "-"}</td>
-                    <td>${player.ReY || "-"}</td>
-                    <td>${player.ReTD || "-"}</td>
-                    <td>${player.FP || "-"}</td>
-                </tr>`;
-                tableBody.insertAdjacentHTML("beforeend", row);
-            });
+                    let teams = new Set();
+                    let positions = new Set();
 
-            populateFilters(teams, positions);
-        })
-        .catch(error => console.error("Error fetching summary data:", error));
-}
+                    data.forEach(player => {
+                        teams.add(player.Team);
+                        positions.add(player.Position);
+
+                        let row = `<tr>
+                            <td>${player.Name || "-"}</td>
+                            <td>${player.Team || "-"}</td>
+                            <td>${player.Position || "-"}</td>
+                            <td>${player["Games Played"] || "-"}</td>
+                            <td>${player.PAtt || "-"}</td>
+                            <td>${player.PC || "-"}</td>
+                            <td>${player.PaY || "-"}</td>
+                            <td>${player.PaTD || "-"}</td>
+                            <td>${player.I || "-"}</td>
+                            <td>${player.RA || "-"}</td>
+                            <td>${player.RuY || "-"}</td>
+                            <td>${player.RuTD || "-"}</td>
+                            <td>${player.F || "-"}</td>
+                            <td>${player.Tar || "-"}</td>
+                            <td>${player.Re || "-"}</td>
+                            <td>${player.ReY || "-"}</td>
+                            <td>${player.ReTD || "-"}</td>
+                            <td>${player.FP || "-"}</td>
+                        </tr>`;
+                        tableBody.insertAdjacentHTML("beforeend", row);
+                    });
+
+                    populateFilters(teams, positions);
+                })
+                .catch(error => console.error("Error fetching summary data:", error));
+        }
 
         function populateFilters(teams, positions) {
             let teamFilter = document.getElementById("teamFilter");
@@ -100,30 +102,35 @@ function fetchPlayerSummary() {
             });
         }
 
-        // let sortDirection = {}; // Track sorting order per column
-
         function sortTable(columnIndex) {
-        let table = document.getElementById("summaryTable");
-        let rows = Array.from(table.rows).slice(1);
-        let isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
+            let table = document.getElementById("summaryTable");
+            let rows = Array.from(table.rows).slice(1); // Get all rows except header
+            let isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
 
-        // Toggle sorting direction for this column
-        sortDirection[columnIndex] = !sortDirection[columnIndex];
-
-        rows.sort((rowA, rowB) => {
-            let a = rowA.cells[columnIndex].innerText;
-            let b = rowB.cells[columnIndex].innerText;
-
-            if (isNumeric) {
-                return sortDirection[columnIndex] ? parseFloat(a) - parseFloat(b) : parseFloat(b) - parseFloat(a);
+            // If sorting the same column, toggle direction
+            if (lastSortedColumn === columnIndex) {
+                sortDirection[columnIndex] = !sortDirection[columnIndex];
             } else {
-                return sortDirection[columnIndex] ? a.localeCompare(b) : b.localeCompare(a);
+                sortDirection[columnIndex] = true; // Default to ascending
+                lastSortedColumn = columnIndex; // Store last sorted column
             }
-        });
 
-        // Reorder rows
-        rows.forEach(row => table.appendChild(row));
-    }
+            rows.sort((rowA, rowB) => {
+                let a = rowA.cells[columnIndex].innerText.trim();
+                let b = rowB.cells[columnIndex].innerText.trim();
+
+                if (isNumeric) {
+                    return sortDirection[columnIndex] ? parseFloat(a) - parseFloat(b) : parseFloat(b) - parseFloat(a);
+                } else {
+                    return sortDirection[columnIndex] ? a.localeCompare(b) : b.localeCompare(a);
+                }
+            });
+
+            // ✅ Clear and re-insert sorted rows (fix duplicates)
+            let tableBody = document.getElementById("summaryTableBody");
+            tableBody.innerHTML = "";
+            rows.forEach(row => tableBody.appendChild(row));
+        }
     </script>
 </head>
 <body class="container my-4">
