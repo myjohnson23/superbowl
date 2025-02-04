@@ -8,9 +8,9 @@ app = Flask(__name__, template_folder="templates")
 CORS(app)
 
 # MongoDB Connection
-client = MongoClient("mongodb://localhost:27017/")
-db = client["fantasyfootball"]
-collection = db["players"]
+client = MongoClient("mongodb://192.168.4.118:27017/")
+db = client["SuperBowl2025"]
+collection = db["SuperBowl2025"]
 
 # Home Page (Links to All Views)
 @app.route("/")

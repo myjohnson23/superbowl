@@ -3,126 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy Football Dashboard</title>
+    <title>Fantasy Football Player Summary</title>
 
     <!-- Bootstrap for styling -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        let sortDirection = {}; // Track sorting order per column
+        let lastSortedColumn = null; // Track last sorted column
+
         document.addEventListener("DOMContentLoaded", function() {
             fetchPlayerSummary();
         });
 
         function fetchPlayerSummary() {
+            let tableBody = document.getElementById("summaryTableBody");
+            
+            // ✅ Clear the table before fetching new data (fix duplicates)
+            tableBody.innerHTML = ""; 
+            sortDirection = {}; // Reset sorting
+            lastSortedColumn = null;
+
             fetch("/players/summary")
                 .then(response => response.json())
                 .then(data => {
                     console.log("Fetched data:", data);
-                    
-                    let playerSelect = document.getElementById("playerSelect");
-                    playerSelect.innerHTML = ""; // Reset dropdown
-                    
+
+                    if (!data.length) {
+                        tableBody.innerHTML = "<tr><td colspan='18' class='text-center'>No player data found.</td></tr>";
+                        return;
+                    }
+
+                    let teams = new Set();
+                    let positions = new Set();
+
                     data.forEach(player => {
-                        let option = `<option value="${player.Name}">${player.Name} (${player.Team})</option>`;
-                        playerSelect.insertAdjacentHTML("beforeend", option);
+                        teams.add(player.Team);
+                        positions.add(player.Position);
+
+                        let row = `<tr>
+                            <td>${player.Name || "-"}</td>
+                            <td>${player.Team || "-"}</td>
+                            <td>${player.Position || "-"}</td>
+                            <td>${player["Games Played"] || "-"}</td>
+                            <td>${player.PAtt || "-"}</td>
+                            <td>${player.PC || "-"}</td>
+                            <td>${player.PaY || "-"}</td>
+                            <td>${player.PaTD || "-"}</td>
+                            <td>${player.I || "-"}</td>
+                            <td>${player.RA || "-"}</td>
+                            <td>${player.RuY || "-"}</td>
+                            <td>${player.RuTD || "-"}</td>
+                            <td>${player.F || "-"}</td>
+                            <td>${player.Tar || "-"}</td>
+                            <td>${player.Re || "-"}</td>
+                            <td>${player.ReY || "-"}</td>
+                            <td>${player.ReTD || "-"}</td>
+                            <td>${player.FP || "-"}</td>
+                        </tr>`;
+                        tableBody.insertAdjacentHTML("beforeend", row);
                     });
+
+                    populateFilters(teams, positions);
                 })
                 .catch(error => console.error("Error fetching summary data:", error));
         }
 
-        function comparePlayers() {
-            let selectedPlayers = Array.from(document.getElementById("playerSelect").selectedOptions).map(option => option.value);
+        function populateFilters(teams, positions) {
+            let teamFilter = document.getElementById("teamFilter");
+            let positionFilter = document.getElementById("positionFilter");
 
-            if (selectedPlayers.length < 1) {
-                alert("Please select at least one player.");
-                return;
-            }
+            teamFilter.innerHTML = '<option value="">All Teams</option>';
+            positionFilter.innerHTML = '<option value="">All Positions</option>';
 
-            fetch("/players/compare", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ players: selectedPlayers })
-            })
-            .then(response => response.json())
-            .then(data => {
-                let compareTableBody = document.getElementById("compareTableBody");
-                compareTableBody.innerHTML = ""; // Reset table
+            teams.forEach(team => {
+                teamFilter.innerHTML += `<option value="${team}">${team}</option>`;
+            });
 
-                for (let player in data) {
-                    let row = `<tr>
-                        <td>${player}</td>
-                        <td>${data[player]["Games Played"]}</td>
-                        <td>${data[player]["PAtt"]}</td>
-                        <td>${data[player]["PaY"]}</td>
-                        <td>${data[player]["PaTD"]}</td>
-                        <td>${data[player]["RuY"]}</td>
-                        <td>${data[player]["FP"]}</td>
-                    </tr>`;
-                    compareTableBody.insertAdjacentHTML("beforeend", row);
-                }
-            })
-            .catch(error => console.error("Error comparing players:", error));
+            positions.forEach(position => {
+                positionFilter.innerHTML += `<option value="${position}">${position}</option>`;
+            });
         }
 
-        function fetchPlayerTrends() {
-            let playerName = document.getElementById("trendPlayerSelect").value;
-            fetch(`/players/trends/${playerName}`)
-                .then(response => response.json())
-                .then(data => {
-                    let labels = data.map(entry => entry.date);
-                    let fpData = data.map(entry => entry.FP);
+        function applyFilters() {
+            let teamFilter = document.getElementById("teamFilter").value;
+            let positionFilter = document.getElementById("positionFilter").value;
+            let rows = document.querySelectorAll("#summaryTableBody tr");
 
-                    let ctx = document.getElementById("trendChart").getContext("2d");
-                    new Chart(ctx, {
-                        type: "line",
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: "Fantasy Points",
-                                data: fpData,
-                                borderColor: "blue",
-                                fill: false
-                            }]
-                        },
-                        options: { responsive: true }
-                    });
-                })
-                .catch(error => console.error("Error fetching trends:", error));
+            rows.forEach(row => {
+                let team = row.children[1].innerText;
+                let position = row.children[2].innerText;
+
+                let showRow = 
+                    (teamFilter === "" || team === teamFilter) &&
+                    (positionFilter === "" || position === positionFilter);
+
+                row.style.display = showRow ? "" : "none";
+            });
+        }
+
+        function sortTable(columnIndex) {
+            let table = document.getElementById("summaryTable");
+            let rows = Array.from(table.rows).slice(1); // Get all rows except header
+            let isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
+
+            // If sorting the same column, toggle direction
+            if (lastSortedColumn === columnIndex) {
+                sortDirection[columnIndex] = !sortDirection[columnIndex];
+            } else {
+                sortDirection[columnIndex] = true; // Default to ascending
+                lastSortedColumn = columnIndex; // Store last sorted column
+            }
+
+            rows.sort((rowA, rowB) => {
+                let a = rowA.cells[columnIndex].innerText.trim();
+                let b = rowB.cells[columnIndex].innerText.trim();
+
+                if (isNumeric) {
+                    return sortDirection[columnIndex] ? parseFloat(a) - parseFloat(b) : parseFloat(b) - parseFloat(a);
+                } else {
+                    return sortDirection[columnIndex] ? a.localeCompare(b) : b.localeCompare(a);
+                }
+            });
+
+            // ✅ Clear and re-insert sorted rows (fix duplicates)
+            let tableBody = document.getElementById("summaryTableBody");
+            tableBody.innerHTML = "";
+            rows.forEach(row => tableBody.appendChild(row));
         }
     </script>
 </head>
 <body class="container my-4">
-    <h1 class="text-center">Fantasy Football Dashboard</h1>
 
-    <!-- Player Comparison -->
-    <h2>Compare Players</h2>
-    <select id="playerSelect" multiple class="form-select"></select>
-    <button class="btn btn-primary mt-2" onclick="comparePlayers()">Compare</button>
+    <h1 class="text-center">Fantasy Football Player Summary</h1>
 
-    <table class="table mt-3">
+    <div class="mb-3 d-flex justify-content-between">
+        <button class="btn btn-primary" onclick="fetchPlayerSummary()">Refresh Data</button>
+
+        <div>
+            <label for="teamFilter" class="form-label">Filter by Team:</label>
+            <select id="teamFilter" class="form-select d-inline-block w-auto" onchange="applyFilters()"></select>
+
+            <label for="positionFilter" class="form-label ms-3">Filter by Position:</label>
+            <select id="positionFilter" class="form-select d-inline-block w-auto" onchange="applyFilters()"></select>
+        </div>
+    </div>
+
+    <table id="summaryTable" class="table table-bordered table-striped">
         <thead class="table-dark">
             <tr>
-                <th>Name</th>
-                <th>Games Played</th>
-                <th>Pass Att</th>
-                <th>Pass Yds</th>
-                <th>Pass TDs</th>
-                <th>Rush Yds</th>
-                <th>Fantasy Points</th>
+                <th onclick="sortTable(0)">Name</th>
+                <th onclick="sortTable(1)">Team</th>
+                <th onclick="sortTable(2)">Position</th>
+                <th onclick="sortTable(3)">Games Played</th>
+                <th onclick="sortTable(4)">Pass Att</th>
+                <th onclick="sortTable(5)">Pass Comp</th>
+                <th onclick="sortTable(6)">Pass Yds</th>
+                <th onclick="sortTable(7)">Pass TDs</th>
+                <th onclick="sortTable(8)">INT</th>
+                <th onclick="sortTable(9)">Rush Att</th>
+                <th onclick="sortTable(10)">Rush Yds</th>
+                <th onclick="sortTable(11)">Rush TDs</th>
+                <th onclick="sortTable(12)">Fumbles</th>
+                <th onclick="sortTable(13)">Targets</th>
+                <th onclick="sortTable(14)">Receptions</th>
+                <th onclick="sortTable(15)">Rec Yds</th>
+                <th onclick="sortTable(16)">Rec TDs</th>
+                <th onclick="sortTable(17)">Fantasy Points</th>
             </tr>
         </thead>
-        <tbody id="compareTableBody"></tbody>
+        <tbody id="summaryTableBody">
+            <!-- Data will be inserted here -->
+        </tbody>
     </table>
-
-    <!-- Performance Trends -->
-    <h2>Player Performance Trends</h2>
-    <select id="trendPlayerSelect" class="form-select"></select>
-    <button class="btn btn-primary mt-2" onclick="fetchPlayerTrends()">Show Trends</button>
-
-    <canvas id="trendChart" class="mt-3"></canvas>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
