@@ -9,58 +9,63 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            fetchPlayerSummary();
-        });
+    let sortDirection = {}; // Track sorting order per column
 
-        function fetchPlayerSummary() {
-        fetch("/players/summary")
-            .then(response => response.json())
-            .then(data => {
-                console.log("Fetched data:", data);
-                
-                let tableBody = document.getElementById("summaryTableBody");
-                tableBody.innerHTML = ""; // ✅ Clear table before updating
-                
-                if (!data.length) {
-                    tableBody.innerHTML = "<tr><td colspan='18' class='text-center'>No player data found.</td></tr>";
-                    return;
-                }
+document.addEventListener("DOMContentLoaded", function() {
+    fetchPlayerSummary();
+});
 
-                let teams = new Set();
-                let positions = new Set();
+function fetchPlayerSummary() {
+    let tableBody = document.getElementById("summaryTableBody");
+    tableBody.innerHTML = ""; // ✅ Clear table before updating
 
-                data.forEach(player => {
-                    teams.add(player.Team);
-                    positions.add(player.Position);
+    // Reset sorting direction when refreshing
+    sortDirection = {};  
 
-                    let row = `<tr>
-                        <td>${player.Name || "-"}</td>
-                        <td>${player.Team || "-"}</td>
-                        <td>${player.Position || "-"}</td>
-                        <td>${player["Games Played"] || "-"}</td>
-                        <td>${player.PAtt || "-"}</td>
-                        <td>${player.PC || "-"}</td>
-                        <td>${player.PaY || "-"}</td>
-                        <td>${player.PaTD || "-"}</td>
-                        <td>${player.I || "-"}</td>
-                        <td>${player.RA || "-"}</td>
-                        <td>${player.RuY || "-"}</td>
-                        <td>${player.RuTD || "-"}</td>
-                        <td>${player.F || "-"}</td>
-                        <td>${player.Tar || "-"}</td>
-                        <td>${player.Re || "-"}</td>
-                        <td>${player.ReY || "-"}</td>
-                        <td>${player.ReTD || "-"}</td>
-                        <td>${player.FP || "-"}</td>
-                    </tr>`;
-                    tableBody.insertAdjacentHTML("beforeend", row); // ✅ More efficient than innerHTML
-                });
+    fetch("/players/summary")
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched data:", data);
+            
+            if (!data.length) {
+                tableBody.innerHTML = "<tr><td colspan='18' class='text-center'>No player data found.</td></tr>";
+                return;
+            }
 
-                populateFilters(teams, positions);
-            })
-            .catch(error => console.error("Error fetching summary data:", error));
-    }
+            let teams = new Set();
+            let positions = new Set();
+
+            data.forEach(player => {
+                teams.add(player.Team);
+                positions.add(player.Position);
+
+                let row = `<tr>
+                    <td>${player.Name || "-"}</td>
+                    <td>${player.Team || "-"}</td>
+                    <td>${player.Position || "-"}</td>
+                    <td>${player["Games Played"] || "-"}</td>
+                    <td>${player.PAtt || "-"}</td>
+                    <td>${player.PC || "-"}</td>
+                    <td>${player.PaY || "-"}</td>
+                    <td>${player.PaTD || "-"}</td>
+                    <td>${player.I || "-"}</td>
+                    <td>${player.RA || "-"}</td>
+                    <td>${player.RuY || "-"}</td>
+                    <td>${player.RuTD || "-"}</td>
+                    <td>${player.F || "-"}</td>
+                    <td>${player.Tar || "-"}</td>
+                    <td>${player.Re || "-"}</td>
+                    <td>${player.ReY || "-"}</td>
+                    <td>${player.ReTD || "-"}</td>
+                    <td>${player.FP || "-"}</td>
+                </tr>`;
+                tableBody.insertAdjacentHTML("beforeend", row);
+            });
+
+            populateFilters(teams, positions);
+        })
+        .catch(error => console.error("Error fetching summary data:", error));
+}
 
         function populateFilters(teams, positions) {
             let teamFilter = document.getElementById("teamFilter");
@@ -95,30 +100,30 @@
             });
         }
 
-        let sortDirection = {}; // Track sorting order per column
+        // let sortDirection = {}; // Track sorting order per column
 
         function sortTable(columnIndex) {
-            let table = document.getElementById("summaryTable");
-            let rows = Array.from(table.rows).slice(1);
-            let isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
+        let table = document.getElementById("summaryTable");
+        let rows = Array.from(table.rows).slice(1);
+        let isNumeric = !isNaN(rows[0].cells[columnIndex].innerText);
 
-            // Toggle sorting direction for this column
-            sortDirection[columnIndex] = !sortDirection[columnIndex];
+        // Toggle sorting direction for this column
+        sortDirection[columnIndex] = !sortDirection[columnIndex];
 
-            rows.sort((rowA, rowB) => {
-                let a = rowA.cells[columnIndex].innerText;
-                let b = rowB.cells[columnIndex].innerText;
+        rows.sort((rowA, rowB) => {
+            let a = rowA.cells[columnIndex].innerText;
+            let b = rowB.cells[columnIndex].innerText;
 
-                if (isNumeric) {
-                    return sortDirection[columnIndex] ? parseFloat(a) - parseFloat(b) : parseFloat(b) - parseFloat(a);
-                } else {
-                    return sortDirection[columnIndex] ? a.localeCompare(b) : b.localeCompare(a);
-                }
-            });
+            if (isNumeric) {
+                return sortDirection[columnIndex] ? parseFloat(a) - parseFloat(b) : parseFloat(b) - parseFloat(a);
+            } else {
+                return sortDirection[columnIndex] ? a.localeCompare(b) : b.localeCompare(a);
+            }
+        });
 
-            // Reorder rows
-            rows.forEach(row => table.appendChild(row));
-        }
+        // Reorder rows
+        rows.forEach(row => table.appendChild(row));
+    }
     </script>
 </head>
 <body class="container my-4">
