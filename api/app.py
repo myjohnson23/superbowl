@@ -87,6 +87,61 @@ def get_players_summary():
 
     return jsonify(summary)
 
+@app.route("/players/compare", methods=["POST"])
+def compare_players():
+    """Compare selected players and return their average stats."""
+    selected_players = request.json.get("players", [])
+
+    if not selected_players:
+        return jsonify({"error": "No players selected"}), 400
+
+    players = list(collection.find({"Name": {"$in": selected_players}}))
+
+    if not players:
+        return jsonify({"error": "Players not found"}), 404
+
+    # Initialize stats dictionary for averaging
+    stats = {}
+    for player in players:
+        name = player["Name"]
+        if name not in stats:
+            stats[name] = {"Games Played": 0, "PAtt": 0, "PC": 0, "PaY": 0, "PaTD": 0,
+                           "I": 0, "RA": 0, "RuY": 0, "RuTD": 0, "F": 0, "Tar": 0,
+                           "Re": 0, "ReY": 0, "ReTD": 0, "FP": 0}
+        
+        stats[name]["Games Played"] += 1
+        for stat in stats[name].keys():
+            if stat in player and isinstance(player[stat], (int, float)):
+                stats[name][stat] += player[stat]
+
+    # Compute averages
+    for name in stats:
+        games = stats[name]["Games Played"]
+        for stat in stats[name]:
+            if stat != "Games Played" and games > 0:
+                stats[name][stat] = round(stats[name][stat] / games, 2)
+
+    return jsonify(stats)
+
+
+@app.route("/players/trends/<player_name>", methods=["GET"])
+def player_trends(player_name):
+    """Return a player's performance trend over time."""
+    players = list(collection.find({"Name": player_name}))
+
+    if not players:
+        return jsonify({"error": "Player not found"}), 404
+
+    trends = []
+    for player in players:
+        trends.append({
+            "date": player["DATE"],
+            "FP": player.get("FP", 0),
+            "PaY": player.get("PaY", 0),
+            "RuY": player.get("RuY", 0),
+        })
+
+    return jsonify(sorted(trends, key=lambda x: x["date"]))
 
 # Add a new player
 @app.route("/players", methods=["POST"])
